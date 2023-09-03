@@ -19,7 +19,7 @@ Options:
 ```rust
 cargo build --release
 
-./target/release/rust-cat
-./target/release/rust-cat -n
-./target/release/rust-cat -n -E
+./target/release/mycat
+./target/release/mycat -n
+./target/release/mycat -n -E
 ```

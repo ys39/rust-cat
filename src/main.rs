@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
+use mycat::process_byte;
 use std::io::Write;
 use std::process::exit;
 
@@ -106,20 +107,26 @@ fn main() -> Result<()> {
         // -u (ignored)
 
         // -v (use ^ and M- notation, except for LFD and TAB)
+        /*
+        日本語の場合、多バイト文字であるため、UTF-8エンコーディングのバイトシーケンスに変換される
+        $ echo 'あ' | cat -v
+        E3 81 82
+        M-cM-^AM-^B
+        */
         if args.show_nonprinting {
             let mut show_nonprinting_content = String::new();
             for line in tmp_file_content.lines() {
-                let mut tmp_line = String::new();
+                let mut output_bytes = Vec::new();
                 for c in line.chars() {
-                    // tab と改行以外の制御文字を ^ で置換する
-                    if c.is_control() && c != '\t' && c != '\n' {
-                        tmp_line.push('^');
-                        tmp_line.push((c as u8 + 64) as char);
-                    } else {
-                        tmp_line.push(c);
+                    // 一文字ずつバイトシーケンスに変換して、output_bytes に追加する
+                    for byte in c.to_string().as_bytes() {
+                        output_bytes.extend(process_byte(*byte));
                     }
                 }
-                show_nonprinting_content.push_str(&format!("{}\n", tmp_line));
+                show_nonprinting_content.push_str(&format!(
+                    "{}\n",
+                    output_bytes.iter().map(|&x| x as char).collect::<String>()
+                ));
             }
             tmp_file_content = show_nonprinting_content;
         }

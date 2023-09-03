@@ -332,6 +332,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5486aed0026218e61b8a01d5fbd5a0a134649abb71a0e53b7bc088529dced86e"
 
 [[package]]
+name = "mycat"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "assert_fs",
+ "clap",
+ "libc",
+ "nix",
+ "predicates",
+]
+
+[[package]]
 name = "nix"
 version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -449,19 +462,6 @@ name = "regex-syntax"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dbb5fb1acd8a1a18b3dd5be62d25485eb770e05afb408a9627d14d451bae12da"
-
-[[package]]
-name = "rust-cat"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "assert_cmd",
- "assert_fs",
- "clap",
- "libc",
- "nix",
- "predicates",
-]
 
 [[package]]
 name = "rustix"
