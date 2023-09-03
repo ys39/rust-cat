@@ -12,43 +12,43 @@ use std::process::exit;
 )]
 struct Cli {
     /// equivalent to -vET
-    #[clap(short('A'), long)]
+    #[arg(short('A'), long)]
     show_all: bool,
 
     /// number nonempty output lines, overrides -n
-    #[clap(short('b'), long)]
+    #[arg(short('b'), long)]
     number_nonblank: bool,
 
     /// equivalent to -vE
-    #[clap(short('e'))]
+    #[arg(short('e'))]
     e: bool,
 
     /// display $ at end of each line
-    #[clap(short('E'), long)]
+    #[arg(short('E'), long)]
     show_ends: bool,
 
     /// number all output lines
-    #[clap(short('n'), long)]
+    #[arg(short('n'), long)]
     number: bool,
 
     /// suppress repeated empty output lines
-    #[clap(short('s'), long)]
+    #[arg(short('s'), long)]
     squeeze_blank: bool,
 
     /// equivalent to -vT
-    #[clap(short('t'))]
+    #[arg(short('t'))]
     t: bool,
 
     /// display TAB characters as ^I
-    #[clap(short('T'), long)]
+    #[arg(short('T'), long)]
     show_tabs: bool,
 
     /// (ignored)
-    #[clap(short('u'))]
+    #[arg(short('u'))]
     u: bool,
 
     /// use ^ and M- notation, except for LFD and TAB
-    #[clap(short('v'), long)]
+    #[arg(short('v'), long)]
     show_nonprinting: bool,
 
     // The file path to read
@@ -59,19 +59,36 @@ fn main() -> Result<()> {
     let args: Cli = Cli::parse();
 
     let mut content = std::string::String::new();
+    let mut line_number = 1;
 
     // read file
     for path in &args.file {
         let file_content = match std::fs::read_to_string(&path) {
+            // ファイルの読み込みが成功した場合 (Ok バリアントが返された場合)、
+            // content にはファイルの内容が入り、この内容をそのまま返す
             Ok(content) => content,
             Err(_) => {
                 eprintln!("cat: {}: No such file or directory.", path.display());
                 exit(1);
             }
         };
-        content.push_str(&file_content);
+
+        // add number to each line
+        if args.number || args.number_nonblank {
+            for line in file_content.lines() {
+                if args.number_nonblank && line.is_empty() {
+                    content.push_str("\n");
+                } else {
+                    content.push_str(&format!("{:>6}\t{}\n", line_number, line));
+                    line_number += 1;
+                }
+            }
+        } else {
+            content.push_str(&file_content);
+        }
     }
 
+    // print content
     for line in content.lines() {
         writeln!(std::io::stdout(), "{}", line)?;
     }
