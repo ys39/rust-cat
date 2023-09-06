@@ -1,6 +1,9 @@
 use anyhow::Result;
 use clap::Parser;
-use mycat::process_byte;
+use mycat::{
+    get_input, show_ends_content_process, show_nonprinting_content_process,
+    show_tabs_content_process, squeeze_blank_content_process,
+};
 use std::io::Write;
 use std::process::exit;
 
@@ -64,10 +67,35 @@ fn main() -> Result<()> {
     // 空の場合は標準入力から読み込み、出力する
     // ctrl-c で終了する(終了コードは 130)
     if args.file.is_empty() {
-        println!("Please input text.");
-        exit(130)
+        loop {
+            let word_content = get_input();
+            println!("{}", word_content);
+        }
     }
 
+    /*
+    let mut file_contents: Vec<String> = Vec::new();
+    for path in &args.file {
+        // 配列にファイルの内容を書き込む
+        let mut tmp: String = std::string::String::new();
+        tmp = match std::fs::read_to_string(&path) {
+            // ファイルの読み込みが成功した場合 (Ok バリアントが返された場合)、
+            // content にはファイルの内容が入り、この内容をそのまま返す
+            Ok(content) => content.lines().map(|x| x.to_string()).collect(),
+            // ファイルの読み込みが失敗した場合 (Err バリアントが返された場合)、
+            // エラーを標準エラー出力に出力してプログラムを終了する
+            Err(_) => {
+                eprintln!("cat: {}: No such file or directory.", path.display());
+                exit(1);
+            }
+        };
+        file_contents.push(tmp);
+    }
+
+    for file_content in file_contents {
+        println!("{}", file_content);
+    }
+    */
     // read file
     for path in &args.file {
         //let mut tmp_file_content: String = std::string::String::new();
@@ -114,50 +142,19 @@ fn main() -> Result<()> {
         M-cM-^AM-^B
         */
         if args.show_nonprinting {
-            let mut show_nonprinting_content = String::new();
-            for line in tmp_file_content.lines() {
-                let mut output_bytes = Vec::new();
-                for c in line.chars() {
-                    // 一文字ずつバイトシーケンスに変換して、output_bytes に追加する
-                    for byte in c.to_string().as_bytes() {
-                        output_bytes.extend(process_byte(*byte));
-                    }
-                }
-                show_nonprinting_content.push_str(&format!(
-                    "{}\n",
-                    output_bytes.iter().map(|&x| x as char).collect::<String>()
-                ));
-            }
-            tmp_file_content = show_nonprinting_content;
+            tmp_file_content = show_nonprinting_content_process(tmp_file_content);
         }
 
         // -s
         // -s が指定された場合は、連続する空行を 1 行にまとめる
         if args.squeeze_blank {
-            let mut squeeze_blank_content = String::new();
-            let mut is_empty = false;
-            for line in tmp_file_content.lines() {
-                if line.is_empty() {
-                    if !is_empty {
-                        squeeze_blank_content.push_str("\n");
-                        is_empty = true;
-                    }
-                } else {
-                    squeeze_blank_content.push_str(&format!("{}\n", line));
-                    is_empty = false;
-                }
-            }
-            tmp_file_content = squeeze_blank_content;
+            tmp_file_content = squeeze_blank_content_process(tmp_file_content);
         }
 
         // -T
         // -T が指定された場合は、タブ文字を ^I に置換する
         if args.show_tabs {
-            let mut show_tabs_content = String::new();
-            for line in tmp_file_content.lines() {
-                show_tabs_content.push_str(&format!("{}\n", line.replace("\t", "^I")));
-            }
-            tmp_file_content = show_tabs_content;
+            tmp_file_content = show_tabs_content_process(tmp_file_content);
         }
 
         // -n, -b
@@ -179,11 +176,7 @@ fn main() -> Result<()> {
         // -E
         // -E が指定された場合は、各行の末尾に $ を付与する
         if args.show_ends {
-            let mut show_ends_content = String::new();
-            for line in tmp_file_content.lines() {
-                show_ends_content.push_str(&format!("{}$\n", line));
-            }
-            tmp_file_content = show_ends_content;
+            tmp_file_content = show_ends_content_process(tmp_file_content);
         }
 
         content.push_str(&tmp_file_content);
