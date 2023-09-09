@@ -40,9 +40,16 @@ pub fn process_byte(ch: u8) -> Vec<u8> {
 pub fn get_input() -> String {
     let mut word = String::new();
     io::stdin().read_line(&mut word).ok();
-    return word.trim().to_string();
+    return word.to_string();
 }
 
+// -v (use ^ and M- notation, except for LFD and TAB)
+/*
+日本語の場合、多バイト文字であるため、UTF-8エンコーディングのバイトシーケンスに変換される
+$ echo 'あ' | cat -v
+E3 81 82
+M-cM-^AM-^B
+*/
 pub fn show_nonprinting_content_process(tmp_file_content: String) -> String {
     let mut show_nonprinting_content = String::new();
     for line in tmp_file_content.lines() {
@@ -61,6 +68,8 @@ pub fn show_nonprinting_content_process(tmp_file_content: String) -> String {
     show_nonprinting_content
 }
 
+// -s
+// -s が指定された場合は、連続する空行を 1 行にまとめる
 pub fn squeeze_blank_content_process(tmp_file_content: String) -> String {
     let mut squeeze_blank_content = String::new();
     let mut is_empty = false;
@@ -78,6 +87,8 @@ pub fn squeeze_blank_content_process(tmp_file_content: String) -> String {
     squeeze_blank_content
 }
 
+// -T
+// -T が指定された場合は、タブ文字を ^I に置換する
 pub fn show_tabs_content_process(tmp_file_content: String) -> String {
     let mut show_tabs_content = String::new();
     for line in tmp_file_content.lines() {
@@ -86,6 +97,31 @@ pub fn show_tabs_content_process(tmp_file_content: String) -> String {
     show_tabs_content
 }
 
+// -n, -b
+// -n と -b が同時に指定された場合は -b が優先される
+pub fn number_content_process(
+    mut line_number: i32,
+    number_nonblank: bool,
+    tmp_file_content: String,
+) -> Vec<String> {
+    let mut number_content = String::new();
+    if line_number == 0 {
+        line_number = 1;
+    }
+    for line in tmp_file_content.lines() {
+        if number_nonblank && line.is_empty() {
+            number_content.push_str("\n");
+        } else {
+            number_content.push_str(&format!("{:>6}\t{}\n", line_number, line));
+            line_number += 1;
+        }
+    }
+    let line_number_string = line_number.to_string();
+    [number_content, line_number_string].to_vec()
+}
+
+// -E
+// -E が指定された場合は、各行の末尾に $ を付与する
 pub fn show_ends_content_process(tmp_file_content: String) -> String {
     let mut show_ends_content = String::new();
     for line in tmp_file_content.lines() {
